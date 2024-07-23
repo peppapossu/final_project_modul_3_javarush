@@ -6,50 +6,46 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.project.model.Root;
+import org.project.model.DataBase;
 import org.project.service.ConverterJson;
+
 import java.io.IOException;
 import static org.project.model.Constants.*;
+import static org.project.service.QuestionService.*;
 
 @WebServlet("/index")
 public class QuestServlet extends HttpServlet {
-    Root db;
+    private DataBase dataBase;
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
-        db = (Root) config.getServletContext().getAttribute(ROOT);
+        dataBase = (DataBase) config.getServletContext().getAttribute(ROOT);
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        Root db = getRoot(req);
-        int currentQuestionIndex = getCurrentQuestionIndex(req, db);
-        if (checkFinish(req, resp, db, currentQuestionIndex)) return;
-        setAttributes(req, db, currentQuestionIndex);
+        DataBase db = getDB(req);
+        int currentQuestionId = getCurrentQuestionId(req, db);
+        if (checkFinish(req, resp, db, currentQuestionId)) return;
+        setAttributes(req, db, currentQuestionId);
         req.getRequestDispatcher("/index.jsp").forward(req, resp);
     }
 
-    private static void setAttributes(HttpServletRequest req, Root db, int currentQuestionIndex) {
-        String currentQuestion = db.getQuestions().get(currentQuestionIndex).getQuestion();
-        int answerFirstId = db.getQuestions().get(currentQuestionIndex).getAnswer().get(0);
-        String answerFirst = db.getAnswers().get(answerFirstId).getAnswer();
+    private void setAttributes(HttpServletRequest req, DataBase db, int currentQuestionId) {
+        
+        req.setAttribute(CURRENT_QUESTION, getCurrentQuestion(db,currentQuestionId));
+        req.setAttribute(ANSWER_FIRST, getAnswerFirst(db, currentQuestionId));
+        req.setAttribute(ANSWER_FIRST_ID, getAnswerFirstId(db, currentQuestionId));
 
-        req.setAttribute(CURRENT_QUESTION, currentQuestion);
-        req.setAttribute(ANSWER_FIRST, answerFirst);
-        req.setAttribute(ANSWER_FIRST_ID, answerFirstId);
-
-        if (db.getQuestions().get(currentQuestionIndex).getAnswer().size()>1) {
-            int answerSecondId = db.getQuestions().get(currentQuestionIndex).getAnswer().get(1);
-            String answerSecond = db.getAnswers().get(answerSecondId).getAnswer();
-            req.setAttribute(ANSWER_SECOND, answerSecond);
-            req.setAttribute(ANSWER_SECOND_ID, answerSecondId);
+        if (getAnswersAmount(db, currentQuestionId) >1) {
+            req.setAttribute(ANSWER_SECOND, getAnswerSecond(db, getAnswerSecondId(db, currentQuestionId)));
+            req.setAttribute(ANSWER_SECOND_ID, getAnswerSecondId(db, currentQuestionId));
         }
     }
-
-    private static boolean checkFinish(HttpServletRequest req, HttpServletResponse resp, Root db, int currentQuestionIndex) throws ServletException, IOException {
-        if (db.getQuestions().get(currentQuestionIndex).answer.get(0)>=100) {
-            String currentQuestion = db.getQuestions().get(currentQuestionIndex).getQuestion();
-            req.setAttribute(CURRENT_QUESTION, currentQuestion);
+    //
+    private boolean checkFinish(HttpServletRequest req, HttpServletResponse resp, DataBase dataBase, int currentQuestionId) throws ServletException, IOException {
+        if (getCurrentAnswerId(dataBase, currentQuestionId) >=100) {
+            req.setAttribute(CURRENT_QUESTION, getCurrentQuestion(dataBase, currentQuestionId));
             req.getServletContext().setAttribute(COUNT_GAMES , countGames(req));
             req.getRequestDispatcher("/finish.jsp").forward(req, resp);
             return true;
@@ -57,29 +53,29 @@ public class QuestServlet extends HttpServlet {
         return false;
     }
 
-
-    private static int getCurrentQuestionIndex(HttpServletRequest req, Root root) {
+    private int getCurrentQuestionId(HttpServletRequest req, DataBase db) {
         String answer = req.getParameter(ANSWER);
         if (answer != null) {
-            return root.getAnswers().get(Integer.parseInt(answer)).getQuestion().get(0);
+            return db.getAnswers().get(Integer.parseInt(answer)).getQuestion().get(0);
         }
         return 0;
     }
 
-    private static Root getRoot(HttpServletRequest req) {
-        Root root;
+    private DataBase getDB(HttpServletRequest req) {
+        DataBase db;
         int countGames = 0;
         String name = req.getParameter(NAME);
         if (req.getSession().getAttribute(ROOT) == null) {
-            root = ConverterJson.jsonConverter();
-            req.getSession(true).setAttribute(ROOT, root);
+            db = ConverterJson.jsonConverter();
+            req.getSession(true).setAttribute(ROOT, db);
             req.getServletContext().setAttribute(NAME, name);
             req.getServletContext().setAttribute(COUNT_GAMES, countGames);}
-            else {root = (Root) req.getSession().getAttribute(ROOT);
+            else {
+            db = (DataBase) req.getSession().getAttribute(ROOT);
         }
-        return root;
+        return db;
     }
-    private static int countGames(HttpServletRequest req) {
+    private int countGames(HttpServletRequest req) {
         int count = Integer.parseInt((req.getServletContext().getAttribute(COUNT_GAMES)).toString());
         return ++count;
     }

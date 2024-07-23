@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class Client {
-    String name;
-    String id;
+    private String name;
+    private String id;
 }

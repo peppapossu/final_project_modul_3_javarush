@@ -2,42 +2,30 @@ package org.project.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
-import org.project.model.Root;
+import org.project.model.DataBase;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.project.model.Constants.*;
 
 public class ConverterJson {
-    public static Root jsonConverter (){
+    public static DataBase jsonConverter (){
 
-        File file = pathToData();
+        File file = new ConverterJson().pathToData();
         ObjectMapper om = new ObjectMapper();
-        Root root;
+        DataBase DataBase;
         try {
-            root = om.readValue(file, Root.class);
-            //root = om.readValue(file, new TypeReference<Root>(){});
+            DataBase = om.readValue(file, DataBase.class);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.out.println("Cannot read from the file");
+            return null;
         }
-        return root;
+        return DataBase;
     }
     @SneakyThrows
-    private static File pathToData(){
+    private File pathToData(){
        return new File ((Paths.get(ConverterJson.class.getClassLoader().getResource(DATA_FILE).toURI())).toString());
-    }
-
-    @SneakyThrows
-    private static void pathToFile() {
-        Path path = Paths.get(ConverterJson.class.getClassLoader().getResource(DATA_FILE).toURI());
-        Stream<String> streamLines = Files.lines(path);
-        String lines = streamLines.collect(Collectors.joining("\n"));
-        streamLines.close();
     }
 }

@@ -1,5 +1,8 @@
 package org.project.model;
 
+import lombok.experimental.UtilityClass;
+
+@UtilityClass
 public class Constants {
     public static final String CURRENT_QUESTION = "currentQuestion";
     public static final String ANSWER_FIRST = "answerFirst";
